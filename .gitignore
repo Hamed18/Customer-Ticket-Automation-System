@@ -20,6 +20,12 @@ ENV/
 *.sqlite
 *.sqlite3
 
+# Node & Frontend
+node_modules/
+dist/
+build/
+.oxlintrc.json
+
 # Temporary / Workspace artifacts
 test.txt
 agentic customer ticket system/

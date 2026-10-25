@@ -11,6 +11,7 @@ try:
         userid: str
         username: str
         access_token: str
+        tenant_id: str = "default"
 
     class IncidentClassification(BaseModel):
         category: Literal["Support", "Commerce", "Technical", "Product"]
@@ -28,8 +29,9 @@ try:
         classification: IncidentClassification | None = None
         status: str | None = None
 
-        # Historic Data
+        # Historic & Episodic Memory Data
         history_incidents: List[str] | None = []
+        user_memories: List[str] | None = []
         relevant_docs: List[str] | None = []
 
         confidence: float | None = None
@@ -46,6 +48,7 @@ except ImportError:
         userid: str = ""
         username: str = ""
         access_token: str = ""
+        tenant_id: str = "default"
 
     @dataclass
     class IncidentClassification:
@@ -62,6 +65,7 @@ except ImportError:
         classification: Optional[IncidentClassification] = None
         status: Optional[str] = None
         history_incidents: Optional[List[str]] = field(default_factory=list)
+        user_memories: Optional[List[str]] = field(default_factory=list)
         relevant_docs: Optional[List[str]] = field(default_factory=list)
         confidence: Optional[float] = None
         draft_response: Optional[str] = None

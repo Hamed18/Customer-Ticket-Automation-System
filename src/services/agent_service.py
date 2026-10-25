@@ -25,6 +25,7 @@ class AgentService:
         title_query: str,
         ticket_description: str,
         token: str,
+        tenant_id: str = "default",
         db: Optional[Session] = None
     ) -> Dict[str, Any]:
         """Execute the LangGraph workflow for a new or existing ticket."""
@@ -43,10 +44,11 @@ class AgentService:
         user_context = UserContext(
             userid=user_id,
             username=username,
-            access_token=token
+            access_token=token,
+            tenant_id=tenant_id
         )
 
-        logger.info(f"Starting agent execution for ticket {ticket_id} on thread {thread_id}")
+        logger.info(f"Starting agent execution for ticket {ticket_id} on thread {thread_id} (Tenant: {tenant_id})")
         result = agent.invoke(ticket_payload, context=user_context, config=config)
 
         # Check if the execution paused on a HITL interrupt
@@ -60,6 +62,7 @@ class AgentService:
             current_node="approval_node" if is_interrupted else "completed",
             status="Running" if is_interrupted else "Completed",
             interrupt_reason="Low confidence flagged for review" if is_interrupted else None,
+            tenant_id=tenant_id,
             db=db
         )
 
@@ -67,6 +70,7 @@ class AgentService:
             "message": "Execution started" if is_interrupted else "Execution completed",
             "thread_id": thread_id,
             "ticket_id": ticket_id,
+            "tenant_id": tenant_id,
             "is_interrupted": is_interrupted,
             "state": jsonable_encoder(result)
         }
@@ -78,6 +82,7 @@ class AgentService:
         user_id: str,
         username: str,
         token: str,
+        tenant_id: str = "default",
         db: Optional[Session] = None
     ) -> Dict[str, Any]:
         """Resume an interrupted LangGraph workflow with human approval or edits."""
@@ -89,10 +94,11 @@ class AgentService:
         user_context = UserContext(
             userid=user_id,
             username=username,
-            access_token=token
+            access_token=token,
+            tenant_id=tenant_id
         )
 
-        logger.info(f"Resuming agent execution for thread {thread_id}")
+        logger.info(f"Resuming agent execution for thread {thread_id} (Tenant: {tenant_id})")
         result = agent.invoke(
             Command(resume=final_response),
             context=user_context,

@@ -54,6 +54,7 @@ def execute_ticket(
             title_query=input_ticket.title_query,
             ticket_description=input_ticket.ticket_description or "",
             token=active_token,
+            tenant_id=current_user.tenant_id,
             db=db
         )
         return result
@@ -81,6 +82,7 @@ def resume_graph(
             user_id=current_user.user_id,
             username=current_user.username,
             token=active_token,
+            tenant_id=current_user.tenant_id,
             db=db
         )
         return result

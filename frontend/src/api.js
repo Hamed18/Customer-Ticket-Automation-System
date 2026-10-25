@@ -155,5 +155,20 @@ export const api = {
   // Threads
   async getThread(ticketId) {
     return await this.request(`/threads/thread?ticket_id=${encodeURIComponent(ticketId)}`)
+  },
+
+  // Episodic Memories
+  async getMemories(userId = '') {
+    const url = userId ? `/memories/?user_id=${encodeURIComponent(userId)}` : '/memories/'
+    return await this.request(url)
+  },
+
+  // TTL Reaper
+  async triggerReaper() {
+    return await this.request('/reaper/trigger', { method: 'POST' })
+  },
+
+  async getReaperStats() {
+    return await this.request('/reaper/stats')
   }
 }

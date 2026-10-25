@@ -1,10 +1,28 @@
 import React, { useState } from 'react'
 import { useAuth, SEEDED_ACCOUNTS } from '../context/AuthContext'
-import { LogOut, User, Shield, Building, ChevronDown, Sparkles } from '../icons'
+import { api } from '../api'
+import { LogOut, User, Shield, Building, ChevronDown, Sparkles, RefreshCw } from '../icons'
 
 export const Navbar = ({ onOpenCreate }) => {
   const { user, isGuest, isAgentOrAdmin, logout, quickLogin } = useAuth()
   const [showSwitchMenu, setShowSwitchMenu] = useState(false)
+  const [reaping, setReaping] = useState(false)
+  const [reaperMsg, setReaperMsg] = useState(null)
+
+  const handleTriggerReaper = async () => {
+    setReaping(true)
+    setReaperMsg(null)
+    try {
+      const stats = await api.triggerReaper()
+      setReaperMsg(`Swept: ${stats.swept_guests} guests, ${stats.swept_tickets} tickets, ${stats.swept_memories} memories`)
+      setTimeout(() => setReaperMsg(null), 4000)
+    } catch (err) {
+      setReaperMsg(`Reaper error: ${err.message}`)
+      setTimeout(() => setReaperMsg(null), 4000)
+    } finally {
+      setReaping(false)
+    }
+  }
 
   return (
     <header className="navbar">
@@ -21,9 +39,33 @@ export const Navbar = ({ onOpenCreate }) => {
             <span>Tenant: <strong>{user.tenant_id}</strong></span>
           </div>
         )}
+
+        {isGuest && (
+          <div className="badge badge-warning badge-sm" title="Session automatically purged after 24h by TTL Reaper">
+            ⏳ 24h Guest TTL
+          </div>
+        )}
+
+        {reaperMsg && (
+          <div className="badge badge-info badge-sm" style={{ animation: 'fadeIn 0.2s' }}>
+            🧹 {reaperMsg}
+          </div>
+        )}
       </div>
 
       <div className="navbar-right">
+        {isAgentOrAdmin && (
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={handleTriggerReaper}
+            disabled={reaping}
+            title="Invoke TTL Reaper cleanup sweep immediately"
+          >
+            <RefreshCw size={14} className={reaping ? 'spin' : ''} />
+            <span>{reaping ? 'Reaping...' : 'TTL Reaper Sweep'}</span>
+          </button>
+        )}
+
         {onOpenCreate && (
           <button className="btn btn-primary" onClick={onOpenCreate}>
             <Sparkles size={16} />

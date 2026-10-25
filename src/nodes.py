@@ -15,6 +15,7 @@ from src.llms import Incident_classifier, llm
 from src.prompts import RAG_response_generation_prompt
 from src.retrieval import retrieve
 from src.services.ticket_service import TicketService
+from src.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ def human_eval(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentS
     """Record direct escalation to manual human handling."""
     userid = runtime.context.userid if runtime.context else "system"
     username = runtime.context.username if runtime.context else "system"
+    tenant_id = getattr(runtime.context, "tenant_id", "default") if runtime.context else "default"
     category = state.classification.category if state.classification else "Technical"
     intent = state.classification.intent if state.classification else "Technical Bug"
     priority = state.classification.urgency if state.classification else "High"
@@ -63,16 +65,17 @@ def human_eval(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentS
         ticket_description=state.incident_description,
         intent=intent,
         priority=priority,
+        tenant_id=tenant_id,
         created_at=datetime.now(timezone.utc)
     )
 
     state.status = "Manual Handling"
-    logger.info(f"Incident {state.incident_id} escalated for manual handling.")
+    logger.info(f"Ticket {state.incident_id} saved with status Manual Handling.")
     return state
 
 
 def doc_search(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
-    """Retrieve relevant knowledge base documents and historical tickets."""
+    """Retrieve relevant knowledge base documents and user episodic memories."""
     query = state.incident_title
     logger.info(f"Retrieving documents for query: '{query}'")
 
@@ -99,15 +102,40 @@ def doc_search(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentS
 
     state.relevant_docs = formatted_docs
     state.history_incidents = history
+
+    # Phase 3: Retrieve Episodic Memories for this specific user in their tenant
+    userid = runtime.context.userid if runtime.context else "system"
+    tenant_id = getattr(runtime.context, "tenant_id", "default") if runtime.context else "default"
+
+    try:
+        episodic_memories = MemoryService.retrieve_relevant_memory(
+            tenant_id=tenant_id,
+            user_id=userid,
+            current_query=query,
+            limit=3
+        )
+        state.user_memories = episodic_memories
+        logger.info(f"Retrieved {len(episodic_memories)} episodic memories for user {userid} in tenant {tenant_id}")
+    except Exception as e:
+        logger.warning(f"Could not retrieve episodic memories: {e}")
+        state.user_memories = []
+
     return state
 
 
 def draft_response(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
-    """Generate draft response using retrieved context."""
+    """Generate draft response using retrieved context and episodic user history."""
     logger.info(f"Drafting RAG response for incident {state.incident_id}")
-    context_str = "\n\n".join(state.relevant_docs) if state.relevant_docs else "No relevant context found."
+    context_str = "\n\n".join(state.relevant_docs) if state.relevant_docs else "No relevant knowledge base docs found."
+    episodic_str = (
+        "\n".join(f"- {m}" for m in state.user_memories)
+        if state.user_memories
+        else "No previous interaction history on file for this user."
+    )
+
     prompt = RAG_response_generation_prompt.format(
         query=state.incident_title,
+        episodic_context=episodic_str,
         retrieved_context=context_str
     )
 
@@ -124,7 +152,6 @@ def draft_response(state: IncidentState, runtime: Runtime[UserContext]) -> Incid
 
 def evaluator(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
     """Calculate confidence score for the drafted response."""
-    # Confidence reflects retrieval grounding
     if not state.relevant_docs:
         confidence_score = 55.0
     else:
@@ -138,15 +165,16 @@ def evaluator(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentSt
 def human_router(state: IncidentState, runtime: Runtime[UserContext]) -> Literal["send_response", "human_review"]:
     """Route based on confidence threshold (>75% auto-resolves, <=75% requires human review)."""
     score = state.confidence or 0.0
-    if score > 75.0:
+    if score > 75:
         return "send_response"
     return "human_review"
 
 
 def human_review(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
-    """Save ticket for Human-in-the-Loop review and interrupt workflow."""
+    """Flag ticket for human review due to low confidence."""
     userid = runtime.context.userid if runtime.context else "system"
     username = runtime.context.username if runtime.context else "system"
+    tenant_id = getattr(runtime.context, "tenant_id", "default") if runtime.context else "default"
     category = state.classification.category if state.classification else "Technical"
     intent = state.classification.intent if state.classification else "Technical Bug"
     priority = state.classification.urgency if state.classification else "Medium"
@@ -163,6 +191,7 @@ def human_review(state: IncidentState, runtime: Runtime[UserContext]) -> Inciden
         ai_response=state.draft_response or "",
         ai_confidence=state.confidence or 0.0,
         retrieved_documents=state.history_incidents or [],
+        tenant_id=tenant_id,
         created_at=datetime.now(timezone.utc)
     )
 
@@ -184,8 +213,12 @@ def approval_node(state: IncidentState, runtime: Runtime[UserContext]) -> Incide
 
 
 def send_approved_response(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
-    """Finalize ticket with human-reviewed response."""
+    """Finalize ticket with human-reviewed response and record episodic memory."""
+    userid = runtime.context.userid if runtime.context else "system"
+    tenant_id = getattr(runtime.context, "tenant_id", "default") if runtime.context else "default"
+    category = state.classification.category if state.classification else "Technical"
     final_resp = state.final_response or state.draft_response or "Response approved."
+
     TicketService.record_approved_response(
         ticket_id=state.incident_id,
         final_response=final_resp,
@@ -194,15 +227,29 @@ def send_approved_response(state: IncidentState, runtime: Runtime[UserContext]) 
         resolved_by="AI+Human"
     )
 
+    # Phase 3: Store Episodic Memory of the human-approved resolution
+    try:
+        MemoryService.record_ticket_resolution(
+            tenant_id=tenant_id,
+            user_id=userid,
+            ticket_id=state.incident_id,
+            title_query=state.incident_title,
+            final_response=final_resp,
+            category=category
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record episodic memory on approved response: {e}")
+
     state.status = "Resolved"
-    logger.info(f"Ticket {state.incident_id} finalized with human-approved response.")
+    logger.info(f"Ticket {state.incident_id} finalized with human-approved response and episodic memory stored.")
     return state
 
 
 def send_response(state: IncidentState, runtime: Runtime[UserContext]) -> IncidentState:
-    """Auto-resolve ticket when AI confidence exceeds threshold."""
+    """Auto-resolve ticket when AI confidence exceeds threshold and record episodic memory."""
     userid = runtime.context.userid if runtime.context else "system"
     username = runtime.context.username if runtime.context else "system"
+    tenant_id = getattr(runtime.context, "tenant_id", "default") if runtime.context else "default"
     category = state.classification.category if state.classification else "Technical"
     intent = state.classification.intent if state.classification else "Technical Bug"
     priority = state.classification.urgency if state.classification else "Medium"
@@ -221,10 +268,24 @@ def send_response(state: IncidentState, runtime: Runtime[UserContext]) -> Incide
         ai_confidence=state.confidence or 0.0,
         retrieved_documents=state.history_incidents or [],
         final_response=response_text,
+        tenant_id=tenant_id,
         created_at=datetime.now(timezone.utc)
     )
 
+    # Phase 3: Store Episodic Memory of auto-resolution
+    try:
+        MemoryService.record_ticket_resolution(
+            tenant_id=tenant_id,
+            user_id=userid,
+            ticket_id=state.incident_id,
+            title_query=state.incident_title,
+            final_response=response_text,
+            category=category
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record episodic memory on auto-resolution: {e}")
+
     state.status = "Resolved"
     state.final_response = response_text
-    logger.info(f"Ticket {state.incident_id} auto-resolved successfully.")
+    logger.info(f"Ticket {state.incident_id} auto-resolved successfully and episodic memory stored.")
     return state

@@ -16,7 +16,8 @@ import {
 export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
   const { user, isAgentOrAdmin } = useAuth()
   const [thread, setThread] = useState(null)
-  const [loadingThread, setLoadingThread] = useState(false)
+  const [memories, setMemories] = useState([])
+  const [loadingMemories, setLoadingMemories] = useState(false)
 
   // Edit / Approve response state
   const [editedResponse, setEditedResponse] = useState(
@@ -30,19 +31,29 @@ export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
     if (!ticket) return
     setEditedResponse(ticket.final_response || ticket.ai_response || '')
     fetchThread()
+    fetchMemories()
   }, [ticket])
 
   const fetchThread = async () => {
     if (!ticket?.ticket_id) return
-    setLoadingThread(true)
     try {
       const data = await api.getThread(ticket.ticket_id)
       setThread(data)
     } catch {
-      // Thread may not exist if manual handling or fully completed
       setThread(null)
+    }
+  }
+
+  const fetchMemories = async () => {
+    if (!ticket?.user_id) return
+    setLoadingMemories(true)
+    try {
+      const data = await api.getMemories(ticket.user_id)
+      setMemories(Array.isArray(data) ? data : [])
+    } catch {
+      setMemories([])
     } finally {
-      setLoadingThread(false)
+      setLoadingMemories(false)
     }
   }
 
@@ -60,7 +71,7 @@ export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
       if (thread?.thread_id) {
         // Resume LangGraph state machine with approved response
         await api.resumeAgent(thread.thread_id, editedResponse)
-        setActionMessage('Response approved and LangGraph workflow resumed successfully!')
+        setActionMessage('Response approved and LangGraph workflow resumed successfully! (Episodic memory recorded)')
       } else {
         // Direct approval update
         await api.approveResponse({
@@ -76,7 +87,7 @@ export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
       if (onUpdated) onUpdated()
       setTimeout(() => {
         onClose()
-      }, 1200)
+      }, 1500)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to approve response')
     } finally {
@@ -86,7 +97,6 @@ export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
 
   if (!ticket) return null
 
-  const isHumanReview = ticket.status === 'Human Review'
   const isResolved = ticket.status === 'Resolved'
 
   return (
@@ -166,6 +176,35 @@ export const TicketDetailsModal = ({ ticket, onClose, onUpdated }) => {
             <div className="bubble bubble-user">
               <p>{ticket.ticket_description || ticket.title_query}</p>
             </div>
+          </div>
+
+          {/* Phase 3: Episodic Memories for this customer */}
+          <div className="detail-section">
+            <h4 className="section-title">
+              <Sparkles size={16} />
+              <span>User Episodic Memory & Prior Interactions ({memories.length})</span>
+            </h4>
+            {loadingMemories ? (
+              <p className="text-muted">Loading interaction memories...</p>
+            ) : memories.length === 0 ? (
+              <div className="doc-item">
+                <span className="text-muted">No prior episodic memories recorded for this customer in tenant {ticket.tenant_id}.</span>
+              </div>
+            ) : (
+              <div className="retrieved-docs-list">
+                {memories.map((m, idx) => (
+                  <div key={m.memory_id || idx} className="doc-item" style={{ borderLeft: '3px solid #6366f1' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                        <span className="badge badge-info badge-sm">{m.memory_type}</span>
+                        <span className="text-muted">{m.created_at ? new Date(m.created_at).toLocaleString() : ''}</span>
+                      </div>
+                      <span className="doc-text" style={{ marginTop: '4px' }}>{m.summary}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* AI Draft & Retrieval */}
