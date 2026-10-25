@@ -8,12 +8,23 @@ import random
 def seed_users(db):
     users = [
         User(
+            user_id="USR000_HAMED",
+            username="hamed",
+            fullname="Hamed",
+            email="hamed@zipticket.com",
+            password_hash=hash_password("hamed123"),
+            mobile_number="9876543200",
+            role="Lead Support Agent",
+            tenant_id="default",
+            is_guest=False
+        ),
+        User(
             user_id="USR000",
             username="admin",
             fullname="Hamed",
             email="admin@zipticket.com",
             password_hash=hash_password("admin123"),
-            mobile_number="9876543200",
+            mobile_number="9876543201",
             role="Lead Support Agent",
             tenant_id="default",
             is_guest=False
@@ -78,18 +89,27 @@ def seed_users(db):
     for u in users:
         existing = db.query(User).filter(User.username == u.username).first()
         if not existing:
-            db.add(u)
+            existing_by_id = db.query(User).filter(User.user_id == u.user_id).first()
+            if existing_by_id:
+                existing_by_id.username = u.username
+                existing_by_id.fullname = u.fullname
+                existing_by_id.password_hash = u.password_hash
+                existing_by_id.role = u.role
+                existing_by_id.tenant_id = u.tenant_id
+            else:
+                db.add(u)
         else:
-            existing.fullname = u.fullname
             existing.role = u.role
             existing.tenant_id = u.tenant_id
             existing.is_guest = u.is_guest
             existing.password_hash = u.password_hash
+            existing.fullname = u.fullname
     db.commit()
     print("Users seeded/updated successfully")
 
 def seed_tickets(db):
     users = [
+        ("USR000", "hamed", "default"),
         ("USR001", "sai", "default"),
         ("USR002", "ramya", "default"),
         ("USR003", "sandy", "default"),

@@ -8,8 +8,8 @@ export const AuthView = () => {
   const [mode, setMode] = useState('login') // 'login' | 'register' | 'guest'
 
   // Login form state
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('admin123')
+  const [username, setUsername] = useState('hamed')
+  const [password, setPassword] = useState('hamed123')
 
   // Register form state
   const [regForm, setRegForm] = useState({
@@ -277,7 +277,7 @@ export const AuthView = () => {
         )}
 
         <div className="auth-footer">
-          Developed by Hamed &bull; Powered by FastAPI & LangGraph Multi-Tier Fallback
+          Developed by <a href="https://www.linkedin.com/in/devhamed/" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}>Hamed</a> &bull; Powered by FastAPI & LangGraph Multi-Tier Fallback
         </div>
       </div>
     </div>

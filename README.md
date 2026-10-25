@@ -133,7 +133,8 @@ The database automatically initializes tables and seeds mock accounts on first l
 
 | Username | Password | Full Name | Role | Tenant | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `admin` | `admin123` | Hamed | Lead Support Agent | `default` | Full administrative & HITL review access |
+| `hamed` | `hamed123` | Hamed | Lead Support Agent | `default` | Primary admin & HITL review access |
+| `admin` | `admin123` | Hamed | Lead Support Agent | `default` | System Administrator account |
 | `ramya` | `ramya123` | Ramya | Support Specialist | `default` | Incident response & ticket editing |
 | `customer1` | `customer123` | John Customer | Customer | `default` | Standard customer ticket view |
 | `acme_user` | `acme123` | Acme Employee | Customer | `tenant_acme` | Isolated multi-tenant demonstration user |
