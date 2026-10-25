@@ -48,3 +48,5 @@ class Ticket(Base):
     # Relationships
     user = relationship("User", back_populates="tickets")
     threads = relationship("Thread", back_populates="ticket", cascade="all, delete")
+    messages = relationship("TicketMessage", back_populates="ticket", cascade="all, delete-orphan", order_by="TicketMessage.created_at.asc()")
+    notes = relationship("TicketNote", back_populates="ticket", cascade="all, delete-orphan", order_by="TicketNote.created_at.desc()")

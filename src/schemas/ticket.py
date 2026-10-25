@@ -36,3 +36,35 @@ class TicketApproveRequest(BaseModel):
     status: str = "Resolved"
     resolution_state: str = "Closed"
     resolved_by: str = "AI+Human"
+
+class MessageCreateRequest(BaseModel):
+    content: str = Field(..., min_length=1, description="Chat message content")
+
+class MessageResponse(BaseModel):
+    message_id: str
+    ticket_id: str
+    tenant_id: str
+    sender_id: str
+    sender_name: str
+    sender_role: str
+    content: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class NoteCreateRequest(BaseModel):
+    content: str = Field(..., min_length=1, description="Internal admin/agent note content")
+
+class NoteResponse(BaseModel):
+    note_id: str
+    ticket_id: str
+    tenant_id: str
+    author_id: str
+    author_name: str
+    author_role: str
+    content: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

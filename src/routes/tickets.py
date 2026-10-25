@@ -9,8 +9,19 @@ from pydantic import BaseModel
 from src.database import get_db
 from src.dependencies import get_current_user, get_current_active_agent, AGENT_ROLES
 from src.models.Users import User
+from src.models.TicketMessage import TicketMessage
+from src.models.TicketNote import TicketNote
 from src.services.ticket_service import TicketService
-from src.schemas.ticket import TicketCreateRequest, TicketResponse, TicketApproveRequest
+from src.services.memory_service import MemoryService
+from src.schemas.ticket import (
+    TicketCreateRequest,
+    TicketResponse,
+    TicketApproveRequest,
+    MessageCreateRequest,
+    MessageResponse,
+    NoteCreateRequest,
+    NoteResponse
+)
 
 logger = logging.getLogger(__name__)
 
@@ -234,3 +245,142 @@ def update_approved_response(
             detail="Ticket not found"
         )
     return {"message": "Ticket updated successfully", "ticket_id": ticket.ticket_id}
+
+
+# =========================================================================
+# Persistent Conversation Messages & Admin Notes (PostgreSQL / DB Backed)
+# =========================================================================
+
+@router.get("/{ticket_id}/messages", response_model=List[MessageResponse])
+def get_ticket_messages(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve full persistent chat conversation history from database across browsers/devices."""
+    is_agent = current_user.role in AGENT_ROLES
+    ticket = TicketService.get_scoped_ticket_by_id(
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        is_agent_or_admin=is_agent,
+        db=db
+    )
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found or access denied")
+
+    messages = (
+        db.query(TicketMessage)
+        .filter(TicketMessage.ticket_id == ticket_id, TicketMessage.tenant_id == current_user.tenant_id)
+        .order_by(TicketMessage.created_at.asc())
+        .all()
+    )
+    return messages
+
+
+@router.post("/{ticket_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+def create_ticket_message(
+    ticket_id: str,
+    payload: MessageCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Persist a new chat message to the database with sender identity, role, and tenant isolation."""
+    is_agent = current_user.role in AGENT_ROLES
+    ticket = TicketService.get_scoped_ticket_by_id(
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        is_agent_or_admin=is_agent,
+        db=db
+    )
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found or access denied")
+
+    message_id = f"MSG{uuid.uuid4().hex[:8].upper()}"
+    new_msg = TicketMessage(
+        message_id=message_id,
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        sender_id=current_user.user_id,
+        sender_name=current_user.fullname or current_user.username,
+        sender_role=current_user.role,
+        content=payload.content.strip()
+    )
+    db.add(new_msg)
+    db.commit()
+    db.refresh(new_msg)
+
+    # Automatically record in episodic memory
+    try:
+        MemoryService.record_interaction(
+            tenant_id=current_user.tenant_id,
+            user_id=ticket.user_id,
+            ticket_id=ticket_id,
+            summary=f"Chat ({new_msg.sender_role} {new_msg.sender_name}): {new_msg.content[:200]}",
+            memory_type="chat_interaction",
+            db=db
+        )
+    except Exception as e:
+        logger.warning(f"Could not record chat memory: {e}")
+
+    return new_msg
+
+
+@router.get("/{ticket_id}/notes", response_model=List[NoteResponse])
+def get_ticket_notes(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_agent)
+):
+    """Retrieve persistent internal staff and admin notes for a ticket (Staff Only)."""
+    ticket = TicketService.get_scoped_ticket_by_id(
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        is_agent_or_admin=True,
+        db=db
+    )
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    notes = (
+        db.query(TicketNote)
+        .filter(TicketNote.ticket_id == ticket_id, TicketNote.tenant_id == current_user.tenant_id)
+        .order_by(TicketNote.created_at.desc())
+        .all()
+    )
+    return notes
+
+
+@router.post("/{ticket_id}/notes", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)
+def create_ticket_note(
+    ticket_id: str,
+    payload: NoteCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_agent)
+):
+    """Persist an internal note to the database for administrative coordination (Staff Only)."""
+    ticket = TicketService.get_scoped_ticket_by_id(
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        is_agent_or_admin=True,
+        db=db
+    )
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    note_id = f"NOTE{uuid.uuid4().hex[:8].upper()}"
+    new_note = TicketNote(
+        note_id=note_id,
+        ticket_id=ticket_id,
+        tenant_id=current_user.tenant_id,
+        author_id=current_user.user_id,
+        author_name=current_user.fullname or current_user.username,
+        author_role=current_user.role,
+        content=payload.content.strip()
+    )
+    db.add(new_note)
+    db.commit()
+    db.refresh(new_note)
+    return new_note
+

@@ -170,5 +170,29 @@ export const api = {
 
   async getReaperStats() {
     return await this.request('/reaper/stats')
+  },
+
+  // Persistent Messages (PostgreSQL / Database Backed)
+  async getTicketMessages(ticketId) {
+    return await this.request(`/tickets/${ticketId}/messages`)
+  },
+
+  async sendTicketMessage(ticketId, content) {
+    return await this.request(`/tickets/${ticketId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    })
+  },
+
+  // Persistent Internal Notes (PostgreSQL / Database Backed)
+  async getTicketNotes(ticketId) {
+    return await this.request(`/tickets/${ticketId}/notes`)
+  },
+
+  async addTicketNote(ticketId, content) {
+    return await this.request(`/tickets/${ticketId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    })
   }
 }

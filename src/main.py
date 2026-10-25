@@ -66,16 +66,26 @@ app.include_router(reaper.router)
 @app.get("/health", tags=["Monitoring"])
 def health_check():
     """Health check probe."""
-    return {"status": "healthy", "service": "ticket-agent-api", "version": "2.0.0"}
+    from src.database import get_database_info
+    return {
+        "status": "healthy",
+        "service": "ticket-agent-api",
+        "version": "2.0.0",
+        "database": get_database_info()
+    }
 
 @app.get("/ready", tags=["Monitoring"])
 def readiness_check():
     """Readiness probe checking database connectivity."""
-    from src.database import engine
+    from src.database import engine, get_database_info
     from sqlalchemy import text
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        return {"status": "ready", "database": "connected"}
+        return {
+            "status": "ready",
+            "database": "connected",
+            "info": get_database_info()
+        }
     except Exception as e:
         return {"status": "degraded", "database": str(e)}
