@@ -1,4 +1,4 @@
-const BASE_URL = '' // Uses Vite reverse-proxy or direct relative path
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') // Supports Vercel production URL or Vite proxy fallback
 
 export const api = {
   getToken() {

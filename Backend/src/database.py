@@ -14,6 +14,12 @@ def create_db_engine():
     global ACTIVE_DB_TYPE, ACTIVE_DB_HOST
     db_url = settings.DATABASE_URL
 
+    # Support Neon / Render URLs that start with postgres:// or postgresql://
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
     if "postgresql" in db_url:
         try:
             # Test direct connection to PostgreSQL

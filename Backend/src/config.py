@@ -24,7 +24,7 @@ _load_env_file()
 
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
-    from pydantic import Field
+    from pydantic import Field, field_validator
 
     class Settings(BaseSettings):
         model_config = SettingsConfigDict(
@@ -64,12 +64,32 @@ try:
         LANGSMITH_PROJECT: str = Field(default="agentic-ticket-resolution")
 
         # Application / Network
-        API_URL: str = Field(default="http://127.0.0.1:8000", description="Backend API base URL")
+        API_URL: str = Field(default="http://127.0.0.1:8001", description="Backend API base URL")
         CORS_ORIGINS: List[str] = Field(
-            default=["http://localhost:8501", "http://127.0.0.1:8501"],
+            default=[
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:8501",
+                "http://127.0.0.1:8501",
+            ],
             description="Allowed CORS origins"
         )
         LANGGRAPH_API: bool = Field(default=False, description="Whether running in LangGraph Cloud API")
+
+        @field_validator("CORS_ORIGINS", mode="before")
+        @classmethod
+        def parse_cors_origins(cls, v):
+            if isinstance(v, str):
+                if v.startswith("[") and v.endswith("]"):
+                    try:
+                        import json
+                        return json.loads(v)
+                    except Exception:
+                        pass
+                return [s.strip() for s in v.split(",") if s.strip()]
+            return v
 
 except ImportError:
     # Graceful fallback when pydantic-settings is not installed in the active environment
@@ -91,8 +111,8 @@ except ImportError:
             self.LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY", "")
             self.LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT", "agentic-ticket-resolution").strip('"')
 
-            self.API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
-            raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:8501,http://127.0.0.1:8501")
+            self.API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
+            raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8501")
             self.CORS_ORIGINS = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
             self.LANGGRAPH_API = os.getenv("LANGGRAPH_API", "false").lower() == "true"
 

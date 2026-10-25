@@ -11,6 +11,8 @@ export default defineConfig({
       '/tickets': 'http://127.0.0.1:8001',
       '/agent': 'http://127.0.0.1:8001',
       '/threads': 'http://127.0.0.1:8001',
+      '/memories': 'http://127.0.0.1:8001',
+      '/reaper': 'http://127.0.0.1:8001',
       '/health': 'http://127.0.0.1:8001'
     }
   }

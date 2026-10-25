@@ -22,7 +22,7 @@ def run_migrations():
             if "tenant_id" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN tenant_id VARCHAR(50) DEFAULT 'default'"))
             if "is_guest" not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN is_guest BOOLEAN DEFAULT 0"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_guest BOOLEAN DEFAULT FALSE"))
             if "expires_at" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN expires_at TIMESTAMP"))
             if "created_at" not in user_cols:
