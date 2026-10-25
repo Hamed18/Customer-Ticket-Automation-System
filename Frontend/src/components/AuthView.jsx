@@ -8,8 +8,8 @@ export const AuthView = () => {
   const [mode, setMode] = useState('login') // 'login' | 'register' | 'guest'
 
   // Login form state
-  const [username, setUsername] = useState('sai')
-  const [password, setPassword] = useState('sai123')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('admin123')
 
   // Register form state
   const [regForm, setRegForm] = useState({
@@ -277,7 +277,7 @@ export const AuthView = () => {
         )}
 
         <div className="auth-footer">
-          Made with ❤️ &bull; Powered by FastAPI & LangGraph Multi-Tier Fallback
+          Developed by Hamed &bull; Powered by FastAPI & LangGraph Multi-Tier Fallback
         </div>
       </div>
     </div>

@@ -8,6 +8,17 @@ import random
 def seed_users(db):
     users = [
         User(
+            user_id="USR000",
+            username="admin",
+            fullname="Hamed",
+            email="admin@zipticket.com",
+            password_hash=hash_password("admin123"),
+            mobile_number="9876543200",
+            role="Lead Support Agent",
+            tenant_id="default",
+            is_guest=False
+        ),
+        User(
             user_id="USR001",
             username="sai",
             fullname="Hamed",
@@ -69,9 +80,11 @@ def seed_users(db):
         if not existing:
             db.add(u)
         else:
+            existing.fullname = u.fullname
             existing.role = u.role
             existing.tenant_id = u.tenant_id
             existing.is_guest = u.is_guest
+            existing.password_hash = u.password_hash
     db.commit()
     print("Users seeded/updated successfully")
 

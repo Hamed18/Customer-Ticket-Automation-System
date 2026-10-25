@@ -2,7 +2,7 @@
 
 **ZipTicket** is an enterprise-ready, AI-driven **Customer Support & IT Incident Resolution Platform** with Human-in-the-Loop (HITL) review, powered by **FastAPI**, **LangGraph**, **React 19 + Vite**, and a **Distributed Multi-Tier LLM Fallback System** on OpenRouter / Gemini.
 
-Made with ❤️ by [Hamed](https://www.linkedin.com/in/devhamed/)
+Developed by [Hamed](https://www.linkedin.com/in/devhamed/)
 
 ---
 
@@ -133,7 +133,7 @@ The database automatically initializes tables and seeds mock accounts on first l
 
 | Username | Password | Full Name | Role | Tenant | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `sai` | `sai123` | Hamed | Lead Support Agent | `default` | Full administrative & HITL review access |
+| `admin` | `admin123` | Hamed | Lead Support Agent | `default` | Full administrative & HITL review access |
 | `ramya` | `ramya123` | Ramya | Support Specialist | `default` | Incident response & ticket editing |
 | `customer1` | `customer123` | John Customer | Customer | `default` | Standard customer ticket view |
 | `acme_user` | `acme123` | Acme Employee | Customer | `tenant_acme` | Isolated multi-tenant demonstration user |

@@ -4,7 +4,7 @@ import { api } from '../api'
 const AuthContext = createContext(null)
 
 export const SEEDED_ACCOUNTS = [
-  { key: 'sai', label: 'Hamed (sai)', role: 'Lead Support Agent', tenant: 'default', desc: 'Lead Support Agent' },
+  { key: 'admin', label: 'Admin (Hamed)', role: 'Lead Support Agent', tenant: 'default', desc: 'Lead Support Agent' },
   { key: 'ramya', label: 'Ramya', role: 'Support Specialist', tenant: 'default', desc: 'Support Specialist' },
   { key: 'sandy', label: 'Sandy', role: 'Tier 2 Support', tenant: 'default', desc: 'Tier 2 Support' },
   { key: 'customer1', label: 'Customer 1', role: 'Customer', tenant: 'default', desc: 'Tenant default Customer' },
@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }) => {
 
   const quickLogin = async (accountKey) => {
     const passwords = {
+      admin: 'admin123',
       sai: 'sai123',
       ramya: 'ramya123',
       sandy: 'sandy123',
