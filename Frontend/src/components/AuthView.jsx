@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth, SEEDED_ACCOUNTS } from '../context/AuthContext'
 import { LogIn, UserPlus, Sparkles, Building, User, Lock, Mail, ShieldAlert } from '../icons'
+import { ZipTicketLogo } from './ZipTicketLogo'
 
 export const AuthView = () => {
   const { login, register, loginAsGuest, quickLogin, loading, authError, setAuthError } = useAuth()
@@ -55,9 +56,8 @@ export const AuthView = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">🎫</div>
-          <h1 className="auth-title">AI Ticket Ops</h1>
-          <p className="auth-subtitle">FastAPI &bull; LangGraph &bull; React &bull; Multi-Tenant Isolated</p>
+          <ZipTicketLogo size="lg" />
+          <p className="auth-subtitle">AI Incident Resolution Platform &bull; Multi-Tenant Isolated</p>
         </div>
 
         {/* Tab switcher */}

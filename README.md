@@ -1,6 +1,6 @@
-# 🎫 Customer Ticket Automation System
+# ⚡ ZipTicket — AI Incident Resolution Platform
 
-An enterprise-ready, AI-driven **Customer Support & IT Incident Resolution Platform** with Human-in-the-Loop (HITL) review, powered by **FastAPI**, **LangGraph**, **React 19 + Vite**, and a **Distributed Multi-Tier LLM Fallback System** on OpenRouter / Gemini.
+**ZipTicket** is an enterprise-ready, AI-driven **Customer Support & IT Incident Resolution Platform** with Human-in-the-Loop (HITL) review, powered by **FastAPI**, **LangGraph**, **React 19 + Vite**, and a **Distributed Multi-Tier LLM Fallback System** on OpenRouter / Gemini.
 
 Made with ❤️ by [Hamed](https://www.linkedin.com/in/devhamed/)
 

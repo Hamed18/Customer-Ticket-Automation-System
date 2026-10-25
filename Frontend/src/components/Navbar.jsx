@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth, SEEDED_ACCOUNTS } from '../context/AuthContext'
 import { api } from '../api'
 import { LogOut, User, Shield, Building, ChevronDown, Sparkles, RefreshCw } from '../icons'
+import { ZipTicketLogo } from './ZipTicketLogo'
 
 export const Navbar = ({ onOpenCreate }) => {
   const { user, isGuest, isAgentOrAdmin, logout, quickLogin } = useAuth()
@@ -27,11 +28,7 @@ export const Navbar = ({ onOpenCreate }) => {
   return (
     <header className="navbar">
       <div className="navbar-left">
-        <div className="brand">
-          <span className="brand-icon">🎫</span>
-          <span className="brand-text">AI Ticket Ops</span>
-          <span className="brand-version">v2.0 React</span>
-        </div>
+        <ZipTicketLogo size="md" />
 
         {user && (
           <div className="tenant-badge" title="Tenant Isolation Scope">

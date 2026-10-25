@@ -39,8 +39,8 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutdown complete.")
 
 app = FastAPI(
-    title="Agentic Customer Ticket Resolution API",
-    description="Production-grade AI agent system with Multi-Tenant Isolation, Episodic Memory, and automated TTL Reaper.",
+    title="ZipTicket API",
+    description="ZipTicket: Production AI incident resolution system with Multi-Tenant Isolation, Episodic Memory, and automated TTL Reaper.",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -74,7 +74,7 @@ def health_check():
     from src.database import get_database_info
     return {
         "status": "healthy",
-        "service": "ticket-agent-api",
+        "service": "zipticket-api",
         "version": "2.0.0",
         "database": get_database_info()
     }

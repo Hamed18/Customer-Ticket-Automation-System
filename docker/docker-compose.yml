@@ -3,18 +3,18 @@ version: "3.9"
 services:
   db:
     image: postgres:16-alpine
-    container_name: ticket_system_db
+    container_name: zipticket_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: ticket_system
+      POSTGRES_DB: zipticket
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ticket_system"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zipticket"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,12 +23,12 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-    container_name: ticket_system_backend
+    container_name: zipticket_backend
     restart: unless-stopped
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgrespassword@db:5432/ticket_system
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgrespassword@db:5432/zipticket
       - SECRET_KEY=${SECRET_KEY:-SUPER_SECRET_KEY_CHANGE_IN_PRODUCTION}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
@@ -42,7 +42,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.ui
-    container_name: ticket_system_frontend
+    container_name: zipticket_frontend
     restart: unless-stopped
     ports:
       - "3000:80"
