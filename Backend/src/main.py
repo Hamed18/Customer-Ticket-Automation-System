@@ -68,6 +68,7 @@ app.include_router(memories.router)
 app.include_router(reaper.router)
 
 @app.get("/health", tags=["Monitoring"])
+@app.get("/healthz", tags=["Monitoring"])
 def health_check():
     """Health check probe."""
     from src.database import get_database_info
